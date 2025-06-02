@@ -1,6 +1,6 @@
 # NATS Relay Plugin
 
-A TypeScript plugin for relaying messages to NATS (Neural Autonomic Transport System), a simple, secure, and high-performance open source messaging system.
+A TypeScript plugin for relaying messages to NATS, a simple, secure, and high-performance open source messaging system.
 
 ## Overview
 
@@ -9,6 +9,7 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 ## Features
 
 - Connect to NATS servers with configurable connection settings
+- Support for TLS connections with certificate authority
 - Publish various data types (binary, string, object) to configurable NATS subjects
 - Automatic data type conversion for simple integration
 - APM integration for performance monitoring and tracing
@@ -26,7 +27,7 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 ## Installation
 
 ```bash
-npm install nats-relay-plugin
+npm install @paysys-labs/nats-relay-plugin
 ```
 
 ## Configuration
@@ -34,23 +35,25 @@ npm install nats-relay-plugin
 The plugin uses environment variables for configuration. Create a `.env` file in the root directory with the following variables:
 
 ```
-DESTINATION_TRANSPORT_URL=nats://localhost:4223
+DESTINATION_TRANSPORT_URL=tls://localhost:4223
 PRODUCER_STREAM=example.subject
+NATS_TLS_CA=/path/to/ca.pem
 ```
 
 ### Configuration Options
 
-| Environment Variable      | Description                              | Default Value         |
-| ------------------------- | ---------------------------------------- | --------------------- |
-| DESTINATION_TRANSPORT_URL | The URL of the NATS server to connect to | nats://localhost:4223 |
-| PRODUCER_STREAM           | The subject to publish messages to       | example.subject       |
+| Environment Variable      | Description                              | Default Value        |
+| ------------------------- | ---------------------------------------- | -------------------- |
+| DESTINATION_TRANSPORT_URL | The URL of the NATS server to connect to | tls://localhost:4223 |
+| PRODUCER_STREAM           | The subject to publish messages to       | example.subject      |
+| NATS_TLS_CA               | Path to the Certificate Authority file   | (required for TLS)   |
 
 ## Usage
 
 ### Basic Usage
 
 ```typescript
-import NatsRelayPlugin from 'nats-relay-plugin';
+import NatsRelayPlugin from '@paysys-labs/nats-relay-plugin';
 import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
 
 // Create logger and APM instances
@@ -77,7 +80,7 @@ await natsRelayPlugin.relay(objectData);
 ### Custom Implementation with Service Import
 
 ```typescript
-import NatsRelayPlugin from 'nats-relay-plugin/service/natsRelayPlugin';
+import NatsRelayPlugin from '@paysys-labs/nats-relay-plugin/dist/service/natsRelayPlugin';
 import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
 
 // Create logger and APM instances
@@ -130,6 +133,7 @@ async init(): Promise<void>
 - **Returns**: A Promise that resolves when the connection is established
 - **Functionality**:
   - Establishes connection to NATS server using the configured server URL
+  - Sets up TLS with the provided CA certificate
   - Logs success or failure of connection attempt
   - Handles connection errors gracefully
 
@@ -185,6 +189,7 @@ Defines the configuration structure.
 export interface IConfig {
   serverUrl: string; // The URL of the server to connect to
   subject: string; // The subject to publish to
+  ca: string; // Path to the CA certificate file
 }
 ```
 
@@ -218,6 +223,7 @@ nats-relay-plugin/
 - Node.js (>=14.x)
 - npm or yarn
 - A running NATS server for testing
+- TLS certificate for secure connections
 
 ### Setup
 
@@ -226,7 +232,7 @@ nats-relay-plugin/
    ```bash
    npm install
    ```
-3. Create a `.env` file with your configuration
+3. Create a `.env` file with your configuration, including the path to your CA certificate file
 4. Build the project:
    ```bash
    npm run build
@@ -239,14 +245,15 @@ nats-relay-plugin/
 - `npm run dev` - Run the application in development mode with hot reloading
 - `npm run build` - Build the TypeScript code
 - `npm test` - Run the test suite
-- `npm run publish` - Run the publisher script
+- `npm run version` - Bump package version
+- `npm run publish` - Publish the package
 - `npm run lint` - Lint the codebase (ESLint and Prettier)
 - `npm run fix:eslint` - Fix ESLint issues automatically
 - `npm run fix:prettier` - Fix Prettier issues automatically
 
 ## Testing
 
-The plugin includes comprehensive unit tests using Jest. The tests cover connection initialization, successful message relaying, and error handling scenarios. Mocks are used for NATS connections, logger service, and APM to isolate the testing of the plugin's functionality.
+The plugin includes comprehensive unit tests using Jest. The tests cover connection initialization, successful message relaying, and error handling scenarios. Mocks are used for NATS connections, logger service, APM, and file system to isolate the testing of the plugin's functionality.
 
 To run the tests:
 
@@ -254,6 +261,6 @@ To run the tests:
 npm test
 ```
 
-<!-- ## License
+## License
 
-ISC -->
+ISC
