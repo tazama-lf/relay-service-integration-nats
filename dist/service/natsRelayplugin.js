@@ -15,6 +15,7 @@ class NatsRelayPlugin {
     }
     async init() {
         try {
+            this.loggerService.log(`Initializing NATS connection: ${config_1.default.serverUrl}`, NatsRelayPlugin.name);
             this.natsConnection = await (0, nats_1.connect)({
                 servers: config_1.default.serverUrl,
                 tls: {
@@ -24,7 +25,7 @@ class NatsRelayPlugin {
             this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
         }
         catch (error) {
-            this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}}`, NatsRelayPlugin.name);
+            this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

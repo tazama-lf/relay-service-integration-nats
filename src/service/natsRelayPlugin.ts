@@ -18,6 +18,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
 
   async init(): Promise<void> {
     try {
+      this.loggerService.log(`Initializing NATS connection: ${config.serverUrl}`, NatsRelayPlugin.name);
       this.natsConnection = await connect({
         servers: config.serverUrl,
         tls: {
@@ -26,7 +27,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
       });
       this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
     } catch (error) {
-      this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}}`, NatsRelayPlugin.name);
+      this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
     }
   }
 
