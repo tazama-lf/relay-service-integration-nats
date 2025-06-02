@@ -26,7 +26,10 @@ export default class NatsRelayPlugin implements ITransportPlugin {
       });
       this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
     } catch (error) {
-      this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
+      this.loggerService?.error(
+        `Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}, ${JSON.stringify(error, null, 4)}`,
+        NatsRelayPlugin.name,
+      );
     }
   }
 
