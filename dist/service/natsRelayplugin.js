@@ -24,7 +24,7 @@ class NatsRelayPlugin {
             this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
         }
         catch (error) {
-            this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}, ${error}`, NatsRelayPlugin.name);
+            this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +36,6 @@ class NatsRelayPlugin {
             });
             const span = this.apm.startSpan('relay');
             this.loggerService.log('Relaying data to NATS', NatsRelayPlugin.name);
-            // FIX: Convert data to a valid NATS payload (Buffer or string)
             let payload;
             if (Buffer.isBuffer(data)) {
                 payload = data;
@@ -45,7 +44,6 @@ class NatsRelayPlugin {
                 payload = data;
             }
             else {
-                // Default: serialize to JSON string
                 payload = JSON.stringify(data);
             }
             this.natsConnection?.publish(config_1.default.subject, payload);
