@@ -263,4 +263,4 @@ npm test
 
 ## License
 
-ISC
+SPDX-License-Identifier: Apache-2.0

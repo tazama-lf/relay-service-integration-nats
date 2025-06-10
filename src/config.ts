@@ -1,15 +1,32 @@
+// SPDX-License-Identifier: Apache-2.0
 import * as dotenv from 'dotenv';
 import path from 'path';
-import type { IConfig } from './interfaces/IConfig';
+import type { AdditionalConfig, ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
 
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
 });
 
-const config = {
-  serverUrl: process.env.DESTINATION_TRANSPORT_URL ?? 'tls://localhost:4223',
-  subject: process.env.PRODUCER_STREAM ?? 'example.subject',
-  ca: process.env.NATS_TLS_CA,
-};
+export interface ExtendedConfig {
+  DESTINATION_TRANSPORT_URL: string;
+  PRODUCER_STREAM: string;
+  NATS_TLS_CA?: string;
+}
 
-export default config as IConfig;
+export const additionalEnvironmentVariables: AdditionalConfig[] = [
+  {
+    name: 'DESTINATION_TRANSPORT_URL',
+    type: 'string',
+  },
+  {
+    name: 'PRODUCER_STREAM',
+    type: 'string',
+  },
+  {
+    name: 'NATS_TLS_CA',
+    type: 'string',
+    optional: true,
+  },
+];
+
+export type Configuration = ProcessorConfig & ExtendedConfig;

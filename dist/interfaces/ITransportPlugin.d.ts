@@ -1,4 +1,4 @@
 export interface ITransportPlugin {
     init: () => Promise<void>;
-    relay: (data: any) => Promise<void>;
+    relay: (data: Uint8Array | string) => Promise<void>;
 }

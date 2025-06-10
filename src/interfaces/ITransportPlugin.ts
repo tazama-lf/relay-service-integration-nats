@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 export interface ITransportPlugin {
   init: () => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  relay: (data: any) => Promise<void>;
+  relay: (data: Uint8Array | string) => Promise<void>;
 }

@@ -5,8 +5,8 @@ export default class NatsRelayPlugin implements ITransportPlugin {
     private natsConnection?;
     private readonly loggerService;
     private readonly apm;
-    private readonly ca;
+    private readonly configuration;
     constructor(loggerService: LoggerService, apm: Apm);
     init(): Promise<void>;
-    relay(data: any): Promise<void>;
+    relay(data: Uint8Array | string): Promise<void>;
 }
