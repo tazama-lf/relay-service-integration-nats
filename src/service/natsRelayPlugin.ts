@@ -41,6 +41,19 @@ export default class NatsRelayPlugin implements ITransportPlugin {
     }
   }
 
+  /**
+   * Relays data to a NATS stream.
+   *
+   * This method publishes the provided data to the configured NATS producer stream.
+   * It handles different input formats (Uint8Array, string, or other objects),
+   * creates APM transactions and spans for monitoring, and logs the operation.
+   *
+   * @param data - The data to relay to NATS. Can be a Uint8Array, string, or any object
+   *               that can be converted to JSON.
+   * @returns A Promise that resolves when the operation completes.
+   * @throws May throw errors if the NATS connection fails. These are caught internally
+   *         and logged, but do not cause the Promise to reject.
+   */
   async relay(data: Uint8Array | string): Promise<void> {
     let apmTransaction = null;
     try {
