@@ -27,7 +27,7 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 ## Installation
 
 ```bash
-npm install @paysys-labs/nats-relay-plugin
+npm install nats-relay-plugin
 ```
 
 ## Configuration
@@ -42,18 +42,18 @@ NATS_TLS_CA=/path/to/ca.pem
 
 ### Configuration Options
 
-| Environment Variable      | Description                              | Default Value        |
-| ------------------------- | ---------------------------------------- | -------------------- |
-| DESTINATION_TRANSPORT_URL | The URL of the NATS server to connect to | tls://localhost:4223 |
-| PRODUCER_STREAM           | The subject to publish messages to       | example.subject      |
-| NATS_TLS_CA               | Path to the Certificate Authority file   | (required for TLS)   |
+| Environment Variable      | Description                              | Default Value                    |
+| ------------------------- | ---------------------------------------- | -------------------------------- |
+| DESTINATION_TRANSPORT_URL | The URL of the NATS server to connect to | tls://localhost:4223             |
+| PRODUCER_STREAM           | The subject to publish messages to       | example.subject                  |
+| NATS_TLS_CA               | Path to the Certificate Authority file   | (required for TLS in production) |
 
 ## Usage
 
 ### Basic Usage
 
 ```typescript
-import NatsRelayPlugin from '@paysys-labs/nats-relay-plugin';
+import NatsRelayPlugin from 'nats-relay-plugin';
 import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
 
 // Create logger and APM instances
@@ -74,13 +74,13 @@ const objectData = { message: 'Hello, NATS!', timestamp: Date.now() };
 // Relay the data to NATS (each format is handled appropriately)
 await natsRelayPlugin.relay(stringData);
 await natsRelayPlugin.relay(binaryData);
-await natsRelayPlugin.relay(objectData);
+await natsRelayPlugin.relay(objectData); // Objects need to be cast to any
 ```
 
 ### Custom Implementation with Service Import
 
 ```typescript
-import NatsRelayPlugin from '@paysys-labs/nats-relay-plugin/dist/service/natsRelayPlugin';
+import NatsRelayPlugin from 'nats-relay-plugin/service/natsRelayPlugin';
 import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
 
 // Create logger and APM instances
@@ -133,7 +133,7 @@ async init(): Promise<void>
 - **Returns**: A Promise that resolves when the connection is established
 - **Functionality**:
   - Establishes connection to NATS server using the configured server URL
-  - Sets up TLS with the provided CA certificate
+  - Sets up TLS with the provided CA certificate (only in non-dev environments when NATS_TLS_CA is provided)
   - Logs success or failure of connection attempt
   - Handles connection errors gracefully
 
@@ -142,12 +142,13 @@ async init(): Promise<void>
 Relays (publishes) data to the configured NATS subject.
 
 ```typescript
-async relay(data: any): Promise<void>
+async relay(data: Uint8Array | string): Promise<void>
 ```
 
 - **Parameters**:
-  - `data`: The data to publish (can be Buffer, string, or object)
-- **Returns**: A Promise that resolves when the data has been published
+  - `data`: The data to relay to NATS. Can be a Uint8Array, string, or any object that can be converted to JSON.
+- **Returns**: A Promise that resolves when the operation completes.
+- **Throws**: May throw errors if the NATS connection fails. These are caught internally and logged, but do not cause the Promise to reject.
 - **Functionality**:
   - Creates an APM transaction for monitoring
   - Creates a span to track the relay operation
@@ -177,20 +178,22 @@ Defines the contract for transport plugins.
 ```typescript
 export interface ITransportPlugin {
   init: () => Promise<void>;
-  relay: (data: any) => Promise<void>;
+  relay: (data: Uint8Array | string) => Promise<void>;
 }
 ```
 
-#### `IConfig`
+#### `Configuration`
 
-Defines the configuration structure.
+The configuration is handled through the `@tazama-lf/frms-coe-lib` processor config system with additional environment variables.
 
 ```typescript
-export interface IConfig {
-  serverUrl: string; // The URL of the server to connect to
-  subject: string; // The subject to publish to
-  ca: string; // Path to the CA certificate file
+export interface ExtendedConfig {
+  DESTINATION_TRANSPORT_URL: string;
+  PRODUCER_STREAM: string;
+  NATS_TLS_CA?: string;
 }
+
+export type Configuration = ProcessorConfig & ExtendedConfig;
 ```
 
 ## Project Structure
@@ -203,7 +206,6 @@ nats-relay-plugin/
 │   ├── config.ts           # Configuration module
 │   ├── index.ts            # Main entry point
 │   ├── interfaces/
-│   │   ├── IConfig.ts      # Configuration interface
 │   │   └── ITransportPlugin.ts  # Plugin interface definition
 │   └── service/
 │       └── natsRelayPlugin.ts   # Main implementation
@@ -240,20 +242,28 @@ nats-relay-plugin/
 
 ### Available Scripts
 
-- `npm start` - Run the compiled application
 - `npm run clean` - Clean build artifacts
-- `npm run dev` - Run the application in development mode with hot reloading
 - `npm run build` - Build the TypeScript code
 - `npm test` - Run the test suite
 - `npm run version` - Bump package version
 - `npm run publish` - Publish the package
-- `npm run lint` - Lint the codebase (ESLint and Prettier)
 - `npm run fix:eslint` - Fix ESLint issues automatically
 - `npm run fix:prettier` - Fix Prettier issues automatically
+- `npm run lint` - Lint the codebase (ESLint and Prettier)
+- `npm run lint:eslint` - Run ESLint only
+- `npm run lint:prettier` - Run Prettier check only
+- `npm run prepare` - Prepare husky hooks
 
 ## Testing
 
-The plugin includes comprehensive unit tests using Jest. The tests cover connection initialization, successful message relaying, and error handling scenarios. Mocks are used for NATS connections, logger service, APM, and file system to isolate the testing of the plugin's functionality.
+The plugin includes comprehensive unit tests using Jest. The tests cover connection initialization, successful message relaying, and error handling scenarios. Tests include:
+
+- Connection establishment with and without TLS
+- Data relay for different formats (string, Buffer, objects)
+- Error handling for connection failures and relay errors
+- APM transaction and span creation
+
+Mocks are used for NATS connections, logger service, APM, and file system to isolate the testing of the plugin's functionality.
 
 To run the tests:
 
