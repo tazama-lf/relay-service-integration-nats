@@ -27,7 +27,7 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 ## Installation
 
 ```bash
-npm install nats-relay-plugin
+npm install @tazama-lf/nats-relay-plugin
 ```
 
 ## Configuration
@@ -53,7 +53,7 @@ NATS_TLS_CA=/path/to/ca.pem
 ### Basic Usage
 
 ```typescript
-import NatsRelayPlugin from 'nats-relay-plugin';
+import NatsRelayPlugin from '@tazama-lf/nats-relay-plugin';
 import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
 
 // Create logger and APM instances
@@ -75,33 +75,6 @@ const objectData = { message: 'Hello, NATS!', timestamp: Date.now() };
 await natsRelayPlugin.relay(stringData);
 await natsRelayPlugin.relay(binaryData);
 await natsRelayPlugin.relay(objectData); // Objects need to be cast to any
-```
-
-### Custom Implementation with Service Import
-
-```typescript
-import NatsRelayPlugin from 'nats-relay-plugin/service/natsRelayPlugin';
-import { LoggerService, Apm } from '@tazama-lf/frms-coe-lib';
-
-// Create logger and APM instances
-const loggerService = new LoggerService();
-const apm = new Apm();
-
-// Create an instance with required dependencies
-const myNatsRelay = new NatsRelayPlugin(loggerService, apm);
-
-// Initialize the connection
-await myNatsRelay.init();
-
-// Send data with metadata for APM tracing
-const data = {
-  payload: 'Important message',
-  metaData: {
-    traceParent: 'your-trace-id', // Optional: For APM trace correlation
-    messageId: 'msg-123',
-  },
-};
-await myNatsRelay.relay(data);
 ```
 
 ## API Reference
@@ -245,8 +218,6 @@ nats-relay-plugin/
 - `npm run clean` - Clean build artifacts
 - `npm run build` - Build the TypeScript code
 - `npm test` - Run the test suite
-- `npm run version` - Bump package version
-- `npm run publish` - Publish the package
 - `npm run fix:eslint` - Fix ESLint issues automatically
 - `npm run fix:prettier` - Fix Prettier issues automatically
 - `npm run lint` - Lint the codebase (ESLint and Prettier)
