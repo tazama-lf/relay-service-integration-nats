@@ -22,7 +22,6 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 
 - **NatsRelayPlugin Class**: Main implementation that handles connection and message relaying
 - **Configuration Module**: Environment-based configuration system
-- **Interface Definitions**: Type-safe contract definitions
 
 ## Installation
 
@@ -146,7 +145,7 @@ The `config.ts` module loads configuration from environment variables.
 
 #### `ITransportPlugin`
 
-Defines the contract for transport plugins.
+Import `ITransportPlugin` from `@tazama-lf/frms-coe-lib/lib/interfaces/relay-service/ITransportPlugin`.
 
 ```typescript
 export interface ITransportPlugin {
@@ -154,6 +153,8 @@ export interface ITransportPlugin {
   relay: (data: Uint8Array | string) => Promise<void>;
 }
 ```
+
+Used to enforce the required structure for compatability with the `relay-service`
 
 #### `Configuration`
 
@@ -178,8 +179,6 @@ nats-relay-plugin/
 ├── src/
 │   ├── config.ts           # Configuration module
 │   ├── index.ts            # Main entry point
-│   ├── interfaces/
-│   │   └── ITransportPlugin.ts  # Plugin interface definition
 │   └── service/
 │       └── natsRelayPlugin.ts   # Main implementation
 ├── __tests__/

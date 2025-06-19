@@ -85,7 +85,7 @@ describe('NatsRelayPlugin', () => {
       const error = new Error('Connection failed');
       (connect as jest.Mock).mockRejectedValueOnce(error);
 
-      await natsRelayPlugin.init();
+      await expect(natsRelayPlugin.init()).rejects.toThrow('Connection failed');
 
       expect(connect).toHaveBeenCalledWith({
         servers: 'nats://localhost:4222',
@@ -138,7 +138,8 @@ describe('NatsRelayPlugin', () => {
       mockNatsConnection.info = { server_id: 'test-server', server_name: 'test' };
 
       const testData = 'test message';
-      await natsRelayPlugin.relay(testData);
+
+      await expect(natsRelayPlugin.relay(testData)).rejects.toThrow('Publish failed');
 
       expect(mockLoggerService.error).toHaveBeenCalledWith(
         `Error relaying data to NATS: ${JSON.stringify(mockNatsConnection.info, null, 4)}`,

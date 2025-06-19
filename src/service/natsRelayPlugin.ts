@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { connect, type NatsConnection } from 'nats';
 import { additionalEnvironmentVariables, type Configuration } from '../config';
-import { type ITransportPlugin } from '../interfaces/ITransportPlugin';
+import type { ITransportPlugin } from '@tazama-lf/frms-coe-lib/lib/interfaces/relay-service/ITransportPlugin';
 import type { LoggerService } from '@tazama-lf/frms-coe-lib';
 import type { Apm } from '@tazama-lf/frms-coe-lib/lib/services/apm';
 import fs from 'fs';
@@ -38,6 +38,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
       this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
     } catch (error) {
       this.loggerService?.error(`Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
+      throw error as Error;
     }
   }
 
@@ -75,6 +76,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
       span?.end();
     } catch (error) {
       this.loggerService?.error(`Error relaying data to NATS: ${JSON.stringify(this.natsConnection?.info, null, 4)}`, NatsRelayPlugin.name);
+      throw error as Error;
     } finally {
       apmTransaction?.end();
     }
