@@ -60,10 +60,10 @@ const loggerService = new LoggerService();
 const apm = new Apm();
 
 // Create plugin instance
-const natsRelayPlugin = new NatsRelayPlugin(loggerService, apm);
+const natsRelayPlugin = new NatsRelayPlugin();
 
 // Initialize the plugin (connects to NATS server)
-await natsRelayPlugin.init();
+await natsRelayPlugin.init(loggerService, apm);
 
 // Create some data to send (supports various formats)
 const stringData = 'Hello, NATS!';
@@ -82,26 +82,20 @@ await natsRelayPlugin.relay(objectData); // Objects need to be cast to any
 
 The main class that implements the `ITransportPlugin` interface.
 
-#### Constructor
-
-```typescript
-constructor(loggerService: LoggerService, apm: Apm)
-```
-
-- **Parameters**:
-  - `loggerService`: An instance of LoggerService from @tazama-lf/frms-coe-lib for logging
-  - `apm`: An instance of Apm from @tazama-lf/frms-coe-lib for performance monitoring
-
 #### Methods
 
-##### `init()`
+##### `init(loggerService, apm)`
 
+Must accept `loggerService` and `apm` as parameter.
 Initializes the connection to the NATS server.
 
 ```typescript
-async init(): Promise<void>
+async init(loggerService?: LoggerService, apm?: Apm): Promise<void>
 ```
 
+- **Parameters**:
+  - `loggerService`: Service instance for handling application logging and monitoring operations
+  - `apm`: Application Performance Monitoring service for tracking metrics, errors, and performance data
 - **Returns**: A Promise that resolves when the connection is established
 - **Functionality**:
   - Establishes connection to NATS server using the configured server URL
@@ -149,7 +143,7 @@ Import `ITransportPlugin` from `@tazama-lf/frms-coe-lib/lib/interfaces/relay-ser
 
 ```typescript
 export interface ITransportPlugin {
-  init: () => Promise<void>;
+  init: (loggerService?: LoggerService, apm?: Apm) => Promise<void>;
   relay: (data: Uint8Array | string) => Promise<void>;
 }
 ```

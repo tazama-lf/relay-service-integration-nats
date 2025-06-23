@@ -48,12 +48,12 @@ describe('NatsRelayPlugin', () => {
 
     (connect as jest.Mock).mockResolvedValue(mockNatsConnection);
 
-    natsRelayPlugin = new NatsRelayPlugin(mockLoggerService, mockApm);
+    natsRelayPlugin = new NatsRelayPlugin();
   });
 
   describe('init', () => {
     it('should establish a NATS connection successfully without TLS in dev environment', async () => {
-      await natsRelayPlugin.init();
+      await natsRelayPlugin.init(mockLoggerService, mockApm);
       expect(connect).toHaveBeenCalledWith({
         servers: 'nats://localhost:4222',
       });
@@ -69,8 +69,8 @@ describe('NatsRelayPlugin', () => {
       });
       (fs.readFileSync as jest.Mock).mockReturnValueOnce('-----BEGIN CERTIFICATE-----\nMockCertificateContent\n-----END CERTIFICATE-----');
 
-      const prodNatsRelayPlugin = new NatsRelayPlugin(mockLoggerService, mockApm);
-      await prodNatsRelayPlugin.init();
+      const prodNatsRelayPlugin = new NatsRelayPlugin();
+      await prodNatsRelayPlugin.init(mockLoggerService, mockApm);
 
       expect(connect).toHaveBeenCalledWith({
         servers: 'tls://localhost:4223',
@@ -85,7 +85,7 @@ describe('NatsRelayPlugin', () => {
       const error = new Error('Connection failed');
       (connect as jest.Mock).mockRejectedValueOnce(error);
 
-      await expect(natsRelayPlugin.init()).rejects.toThrow('Connection failed');
+      await expect(natsRelayPlugin.init(mockLoggerService, mockApm)).rejects.toThrow('Connection failed');
 
       expect(connect).toHaveBeenCalledWith({
         servers: 'nats://localhost:4222',
@@ -99,7 +99,7 @@ describe('NatsRelayPlugin', () => {
 
   describe('relay', () => {
     beforeEach(async () => {
-      await natsRelayPlugin.init();
+      await natsRelayPlugin.init(mockLoggerService, mockApm);
       mockNatsConnection.publish.mockClear();
     });
 

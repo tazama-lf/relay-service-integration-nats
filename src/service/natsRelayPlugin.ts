@@ -9,19 +9,19 @@ import { validateProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/proc
 
 export default class NatsRelayPlugin implements ITransportPlugin {
   private natsConnection?: NatsConnection;
-  private readonly loggerService: LoggerService;
-  private readonly apm: Apm;
+  private loggerService?: LoggerService;
+  private apm?: Apm;
   private readonly configuration: Configuration;
 
-  constructor(loggerService: LoggerService, apm: Apm) {
-    this.loggerService = loggerService;
-    this.apm = apm;
+  constructor() {
     this.configuration = validateProcessorConfig(additionalEnvironmentVariables) as Configuration;
   }
 
-  async init(): Promise<void> {
+  async init(loggerService?: LoggerService, apm?: Apm): Promise<void> {
+    this.loggerService = loggerService;
+    this.apm = apm;
     try {
-      this.loggerService.log(`Initializing NATS connection: ${this.configuration.DESTINATION_TRANSPORT_URL}`, NatsRelayPlugin.name);
+      this.loggerService?.log(`Initializing NATS connection: ${this.configuration.DESTINATION_TRANSPORT_URL}`, NatsRelayPlugin.name);
       if (this.configuration.nodeEnv !== 'dev' && this.configuration.NATS_TLS_CA) {
         const tlsOptions = {
           ca: fs.readFileSync(this.configuration.NATS_TLS_CA, 'utf-8'),
@@ -58,9 +58,9 @@ export default class NatsRelayPlugin implements ITransportPlugin {
   async relay(data: Uint8Array | string): Promise<void> {
     let apmTransaction = null;
     try {
-      apmTransaction = this.apm.startTransaction(NatsRelayPlugin.name);
-      const span = this.apm.startSpan('relay');
-      this.loggerService.log('Relaying data to NATS', NatsRelayPlugin.name);
+      apmTransaction = this.apm?.startTransaction(NatsRelayPlugin.name);
+      const span = this.apm?.startSpan('relay');
+      this.loggerService?.log('Relaying data to NATS', NatsRelayPlugin.name);
 
       let payload: Uint8Array | string | undefined;
       if (Buffer.isBuffer(data)) {
