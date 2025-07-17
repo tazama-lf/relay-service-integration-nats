@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-import { connect, type NatsConnection } from 'nats';
-import { additionalEnvironmentVariables, type Configuration } from '../config';
-import type { ITransportPlugin } from '@tazama-lf/frms-coe-lib/lib/interfaces/relay-service/ITransportPlugin';
 import type { LoggerService } from '@tazama-lf/frms-coe-lib';
-import type { Apm } from '@tazama-lf/frms-coe-lib/lib/services/apm';
-import fs from 'node:fs';
 import { validateProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
+import type { ITransportPlugin } from '@tazama-lf/frms-coe-lib/lib/interfaces/relay-service/ITransportPlugin';
+import type { Apm } from '@tazama-lf/frms-coe-lib/lib/services/apm';
+import { connect, type NatsConnection } from 'nats';
+import fs from 'node:fs';
+import * as util from 'node:util';
+import { additionalEnvironmentVariables, type Configuration } from '../config';
 
 export default class NatsRelayPlugin implements ITransportPlugin {
   private natsConnection?: NatsConnection;
@@ -37,11 +38,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
       }
       this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
     } catch (error) {
-      const SPACE = 4;
-      this.loggerService?.error(
-        `Error connecting to NATS: ${JSON.stringify(this.natsConnection?.info, null, SPACE)}`,
-        NatsRelayPlugin.name,
-      );
+      this.loggerService?.error(`Error connecting to NATS: ${util.inspect(error)}`, NatsRelayPlugin.name);
       throw error as Error;
     }
   }
@@ -79,11 +76,7 @@ export default class NatsRelayPlugin implements ITransportPlugin {
 
       span?.end();
     } catch (error) {
-      const SPACE = 4;
-      this.loggerService?.error(
-        `Error relaying data to NATS: ${JSON.stringify(this.natsConnection?.info, null, SPACE)}`,
-        NatsRelayPlugin.name,
-      );
+      this.loggerService?.error(`Error relaying data to NATS: ${util.inspect(error)}`, NatsRelayPlugin.name);
       await Promise.reject(error as Error);
     } finally {
       apmTransaction?.end();

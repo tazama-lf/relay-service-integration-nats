@@ -4,6 +4,7 @@ import NatsRelayPlugin from '../src/service/natsRelayPlugin';
 import { LoggerService } from '@tazama-lf/frms-coe-lib';
 import fs from 'node:fs';
 import { validateProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
+import * as util from 'node:util';
 
 // Mock dependencies
 jest.mock('nats');
@@ -90,10 +91,7 @@ describe('NatsRelayPlugin', () => {
       expect(connect).toHaveBeenCalledWith({
         servers: 'nats://localhost:4222',
       });
-      expect(mockLoggerService.error).toHaveBeenCalledWith(
-        `Error connecting to NATS: ${JSON.stringify(undefined, null, 4)}`,
-        'NatsRelayPlugin',
-      );
+      expect(mockLoggerService.error).toHaveBeenCalledWith(`Error connecting to NATS: ${util.inspect(error)}`, 'NatsRelayPlugin');
     });
   });
 
@@ -141,10 +139,7 @@ describe('NatsRelayPlugin', () => {
 
       await expect(natsRelayPlugin.relay(testData)).rejects.toThrow('Publish failed');
 
-      expect(mockLoggerService.error).toHaveBeenCalledWith(
-        `Error relaying data to NATS: ${JSON.stringify(mockNatsConnection.info, null, 4)}`,
-        'NatsRelayPlugin',
-      );
+      expect(mockLoggerService.error).toHaveBeenCalledWith(`Error relaying data to NATS: ${util.inspect(error)}`, 'NatsRelayPlugin');
     });
   });
 });
