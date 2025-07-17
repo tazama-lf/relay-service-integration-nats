@@ -2,12 +2,12 @@
 import { connect } from 'nats';
 import NatsRelayPlugin from '../src/service/natsRelayPlugin';
 import { LoggerService } from '@tazama-lf/frms-coe-lib';
-import fs from 'fs';
+import fs from 'node:fs';
 import { validateProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
 
 // Mock dependencies
 jest.mock('nats');
-jest.mock('fs');
+jest.mock('node:fs');
 jest.mock('@tazama-lf/frms-coe-lib/lib/config/processor.config', () => ({
   validateProcessorConfig: jest.fn(),
 }));
