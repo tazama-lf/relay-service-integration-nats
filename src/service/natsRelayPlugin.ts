@@ -3,7 +3,7 @@ import type { LoggerService } from '@tazama-lf/frms-coe-lib';
 import { validateProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
 import type { ITransportPlugin } from '@tazama-lf/frms-coe-lib/lib/interfaces/relay-service/ITransportPlugin';
 import type { Apm } from '@tazama-lf/frms-coe-lib/lib/services/apm';
-import { connect, type NatsConnection } from 'nats';
+import { connect, type ConnectionOptions, type NatsConnection, type TlsOptions } from 'nats';
 import fs from 'node:fs';
 import * as util from 'node:util';
 import { additionalEnvironmentVariables, type Configuration } from '../config';
@@ -23,19 +23,26 @@ export default class NatsRelayPlugin implements ITransportPlugin {
     this.apm = apm;
     try {
       this.loggerService?.log(`Initializing NATS connection: ${this.configuration.DESTINATION_TRANSPORT_URL}`, NatsRelayPlugin.name);
-      if (this.configuration.nodeEnv !== 'dev' && this.configuration.NATS_TLS_CA) {
-        const tlsOptions = {
-          ca: fs.readFileSync(this.configuration.NATS_TLS_CA, 'utf-8'),
-        };
-        this.natsConnection = await connect({
-          servers: this.configuration.DESTINATION_TRANSPORT_URL,
-          tls: tlsOptions,
-        });
-      } else {
-        this.natsConnection = await connect({
-          servers: this.configuration.DESTINATION_TRANSPORT_URL,
-        });
+      const {
+        DESTINATION_NATS_AUTHENTICATED,
+        DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH,
+        DESTINATION_NATS_CLIENT_CERT_PATH,
+        DESTINATION_NATS_CLIENT_KEY_PATH,
+      } = this.configuration;
+      const options: ConnectionOptions = {
+        servers: this.configuration.DESTINATION_TRANSPORT_URL,
+      };
+      if (DESTINATION_NATS_AUTHENTICATED === true) {
+        if (Boolean(DESTINATION_NATS_CLIENT_CERT_PATH) !== Boolean(DESTINATION_NATS_CLIENT_KEY_PATH)) {
+          throw new Error('DESTINATION_NATS_CLIENT_CERT_PATH and DESTINATION_NATS_CLIENT_KEY_PATH must be provided together');
+        }
+        const tls: TlsOptions = {};
+        if (DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH) tls.ca = fs.readFileSync(DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH, 'utf-8');
+        if (DESTINATION_NATS_CLIENT_CERT_PATH) tls.cert = fs.readFileSync(DESTINATION_NATS_CLIENT_CERT_PATH, 'utf-8');
+        if (DESTINATION_NATS_CLIENT_KEY_PATH) tls.key = fs.readFileSync(DESTINATION_NATS_CLIENT_KEY_PATH, 'utf-8');
+        options.tls = tls;
       }
+      this.natsConnection = await connect(options);
       this.loggerService?.log('NATS connection established', NatsRelayPlugin.name);
     } catch (error) {
       this.loggerService?.error(`Error connecting to NATS: ${util.inspect(error)}`, NatsRelayPlugin.name);

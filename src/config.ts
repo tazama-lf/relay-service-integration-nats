@@ -10,7 +10,10 @@ dotenv.config({
 export interface ExtendedConfig {
   DESTINATION_TRANSPORT_URL: string;
   PRODUCER_STREAM: string;
-  NATS_TLS_CA?: string;
+  DESTINATION_NATS_AUTHENTICATED?: boolean;
+  DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH?: string;
+  DESTINATION_NATS_CLIENT_CERT_PATH?: string;
+  DESTINATION_NATS_CLIENT_KEY_PATH?: string;
 }
 
 export const additionalEnvironmentVariables: AdditionalConfig[] = [
@@ -23,7 +26,22 @@ export const additionalEnvironmentVariables: AdditionalConfig[] = [
     type: 'string',
   },
   {
-    name: 'NATS_TLS_CA',
+    name: 'DESTINATION_NATS_AUTHENTICATED',
+    type: 'boolean',
+    optional: true,
+  },
+  {
+    name: 'DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH',
+    type: 'string',
+    optional: true,
+  },
+  {
+    name: 'DESTINATION_NATS_CLIENT_CERT_PATH',
+    type: 'string',
+    optional: true,
+  },
+  {
+    name: 'DESTINATION_NATS_CLIENT_KEY_PATH',
     type: 'string',
     optional: true,
   },
