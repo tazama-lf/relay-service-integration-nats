@@ -26,7 +26,6 @@ describe('NatsRelayPlugin', () => {
       nodeEnv: 'dev',
       DESTINATION_TRANSPORT_URL: 'nats://localhost:4222',
       PRODUCER_STREAM: 'test.subject',
-      NATS_TLS_CA: '/path/to/ca.pem',
     });
 
     (fs.readFileSync as jest.Mock).mockReturnValue('-----BEGIN CERTIFICATE-----\nMockCertificateContent\n-----END CERTIFICATE-----');
@@ -53,7 +52,7 @@ describe('NatsRelayPlugin', () => {
   });
 
   describe('init', () => {
-    it('should establish a NATS connection successfully without TLS in dev environment', async () => {
+    it('should establish a NATS connection successfully without TLS configuration', async () => {
       await natsRelayPlugin.init(mockLoggerService, mockApm);
       expect(connect).toHaveBeenCalledWith({
         servers: 'nats://localhost:4222',
@@ -66,7 +65,8 @@ describe('NatsRelayPlugin', () => {
         nodeEnv: 'production',
         DESTINATION_TRANSPORT_URL: 'tls://localhost:4223',
         PRODUCER_STREAM: 'test.subject',
-        NATS_TLS_CA: '/path/to/ca.pem',
+        DESTINATION_NATS_AUTHENTICATED: true,
+        DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH: '/path/to/ca.pem',
       });
       (fs.readFileSync as jest.Mock).mockReturnValueOnce('-----BEGIN CERTIFICATE-----\nMockCertificateContent\n-----END CERTIFICATE-----');
 
@@ -80,6 +80,94 @@ describe('NatsRelayPlugin', () => {
         },
       });
       expect(mockLoggerService.log).toHaveBeenCalledWith('NATS connection established', 'NatsRelayPlugin');
+    });
+
+    it.each([false, undefined])('should ignore certificate paths when DESTINATION_NATS_AUTHENTICATED is %s', async (authenticated) => {
+      (validateProcessorConfig as jest.Mock).mockReturnValueOnce({
+        nodeEnv: 'dev',
+        DESTINATION_TRANSPORT_URL: 'nats://localhost:4222',
+        PRODUCER_STREAM: 'test.subject',
+        DESTINATION_NATS_AUTHENTICATED: authenticated,
+        DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH: '/missing/ca.pem',
+        DESTINATION_NATS_CLIENT_CERT_PATH: '/missing/client.pem',
+      });
+
+      await new NatsRelayPlugin().init(mockLoggerService, mockApm);
+
+      expect(fs.readFileSync).not.toHaveBeenCalled();
+      expect(connect).toHaveBeenCalledTimes(1);
+      expect(connect).toHaveBeenCalledWith({ servers: 'nats://localhost:4222' });
+    });
+
+    it('should require TLS with system trusted CAs when explicitly enabled', async () => {
+      (validateProcessorConfig as jest.Mock).mockReturnValueOnce({
+        DESTINATION_TRANSPORT_URL: 'nats://localhost:4222',
+        PRODUCER_STREAM: 'test.subject',
+        DESTINATION_NATS_AUTHENTICATED: true,
+      });
+
+      await new NatsRelayPlugin().init(mockLoggerService, mockApm);
+
+      expect(connect).toHaveBeenCalledWith({ servers: 'nats://localhost:4222', tls: {} });
+      expect(fs.readFileSync).not.toHaveBeenCalled();
+    });
+
+    it.each([undefined, '/path/to/ca.pem'])('should support mutual TLS with CA %s', async (ca) => {
+      (validateProcessorConfig as jest.Mock).mockReturnValueOnce({
+        DESTINATION_TRANSPORT_URL: 'tls://localhost:4223',
+        PRODUCER_STREAM: 'test.subject',
+        nodeEnv: 'dev',
+        DESTINATION_NATS_AUTHENTICATED: true,
+        DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH: ca,
+        DESTINATION_NATS_CLIENT_CERT_PATH: '/path/to/client.pem',
+        DESTINATION_NATS_CLIENT_KEY_PATH: '/path/to/client-key.pem',
+      });
+      (fs.readFileSync as jest.Mock).mockImplementation((file) => `contents of ${file}`);
+
+      await new NatsRelayPlugin().init(mockLoggerService, mockApm);
+
+      expect(connect).toHaveBeenCalledWith({
+        servers: 'tls://localhost:4223',
+        tls: {
+          ...(ca ? { ca: `contents of ${ca}` } : {}),
+          cert: 'contents of /path/to/client.pem',
+          key: 'contents of /path/to/client-key.pem',
+        },
+      });
+    });
+
+    it.each([
+      { DESTINATION_NATS_CLIENT_CERT_PATH: '/path/to/client.pem' },
+      { DESTINATION_NATS_CLIENT_KEY_PATH: '/path/to/client-key.pem' },
+    ])('should reject incomplete mutual TLS configuration: %o', async (tlsConfig) => {
+      (validateProcessorConfig as jest.Mock).mockReturnValueOnce({
+        DESTINATION_TRANSPORT_URL: 'nats://localhost:4222',
+        PRODUCER_STREAM: 'test.subject',
+        DESTINATION_NATS_AUTHENTICATED: true,
+        ...tlsConfig,
+      });
+
+      await expect(new NatsRelayPlugin().init(mockLoggerService, mockApm)).rejects.toThrow(
+        'DESTINATION_NATS_CLIENT_CERT_PATH and DESTINATION_NATS_CLIENT_KEY_PATH must be provided together',
+      );
+      expect(connect).not.toHaveBeenCalled();
+    });
+
+    it('should propagate certificate file errors without connecting', async () => {
+      (validateProcessorConfig as jest.Mock).mockReturnValueOnce({
+        DESTINATION_TRANSPORT_URL: 'tls://localhost:4223',
+        PRODUCER_STREAM: 'test.subject',
+        DESTINATION_NATS_AUTHENTICATED: true,
+        DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH: '/missing/ca.pem',
+      });
+      const error = new Error('Certificate file not found');
+      (fs.readFileSync as jest.Mock).mockImplementationOnce(() => {
+        throw error;
+      });
+
+      await expect(new NatsRelayPlugin().init(mockLoggerService, mockApm)).rejects.toThrow(error);
+      expect(connect).not.toHaveBeenCalled();
+      expect(mockLoggerService.error).toHaveBeenCalledWith(`Error connecting to NATS: ${util.inspect(error)}`, 'NatsRelayPlugin');
     });
 
     it('should handle connection error', async () => {

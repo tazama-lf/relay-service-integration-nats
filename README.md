@@ -9,7 +9,7 @@ The NATS Relay Plugin is a transport plugin that enables applications to easily 
 ## Features
 
 - Connect to NATS servers with configurable connection settings
-- Support for TLS connections with certificate authority
+- Support for TLS connections with system or custom certificate authorities and optional mutual TLS
 - Publish various data types (binary, string, object) to configurable NATS subjects
 - Automatic data type conversion for simple integration
 - APM integration for performance monitoring and tracing
@@ -36,16 +36,31 @@ The plugin uses environment variables for configuration. Create a `.env` file in
 ```
 DESTINATION_TRANSPORT_URL=tls://localhost:4223
 PRODUCER_STREAM=example.subject
-NATS_TLS_CA=/path/to/ca.pem
+DESTINATION_NATS_AUTHENTICATED=true
+DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH=/path/to/ca.pem
 ```
 
 ### Configuration Options
 
-| Environment Variable      | Description                              | Default Value                    |
-| ------------------------- | ---------------------------------------- | -------------------------------- |
-| DESTINATION_TRANSPORT_URL | The URL of the NATS server to connect to | tls://localhost:4223             |
-| PRODUCER_STREAM           | The subject to publish messages to       | example.subject                  |
-| NATS_TLS_CA               | Path to the Certificate Authority file   | (required for TLS in production) |
+| Environment Variable                        | Description                                                | Required |
+| ------------------------------------------- | ---------------------------------------------------------- | -------- |
+| DESTINATION_TRANSPORT_URL                   | The URL of the NATS server to connect to                   | Yes      |
+| PRODUCER_STREAM                             | The subject to publish messages to                         | Yes      |
+| DESTINATION_NATS_AUTHENTICATED              | Set to `true` to enable TLS; defaults to `false`           | No       |
+| DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH | Path to a PEM Certificate Authority file                   | No       |
+| DESTINATION_NATS_CLIENT_CERT_PATH           | Path to a PEM client certificate; requires the client key  | No       |
+| DESTINATION_NATS_CLIENT_KEY_PATH            | Path to a PEM client private key; requires the client cert | No       |
+
+TLS settings apply in every environment, including `NODE_ENV=dev`. As in `frms-coe-startup-lib`, certificate files are read only when `DESTINATION_NATS_AUTHENTICATED=true`. When the flag is unset or `false`, the plugin passes only the server URL to the NATS client, preserving its default connection behavior.
+
+For a server with a certificate trusted by the system, set `DESTINATION_NATS_AUTHENTICATED=true` and omit `DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH`. For mutual TLS, also provide both client files:
+
+```dotenv
+DESTINATION_NATS_CLIENT_CERT_PATH=/path/to/client-cert.pem
+DESTINATION_NATS_CLIENT_KEY_PATH=/path/to/client-key.pem
+```
+
+Use `DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH` as well if the server uses a private CA. Certificate verification remains enabled. When TLS is enabled, missing or unreadable configured certificate files and incomplete client certificate/key pairs cause initialisation to fail.
 
 ## Usage
 
@@ -99,7 +114,7 @@ async init(loggerService?: LoggerService, apm?: Apm): Promise<void>
 - **Returns**: A Promise that resolves when the connection is established
 - **Functionality**:
   - Establishes connection to NATS server using the configured server URL
-  - Sets up TLS with the provided CA certificate (only in non-dev environments when NATS_TLS_CA is provided)
+  - Sets up TLS when `DESTINATION_NATS_AUTHENTICATED=true`, with optional mutual TLS
   - Logs success or failure of connection attempt
   - Handles connection errors gracefully
 
@@ -158,7 +173,10 @@ The configuration is handled through the `@tazama-lf/frms-coe-lib` processor con
 export interface ExtendedConfig {
   DESTINATION_TRANSPORT_URL: string;
   PRODUCER_STREAM: string;
-  NATS_TLS_CA?: string;
+  DESTINATION_NATS_AUTHENTICATED?: boolean;
+  DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH?: string;
+  DESTINATION_NATS_CLIENT_CERT_PATH?: string;
+  DESTINATION_NATS_CLIENT_KEY_PATH?: string;
 }
 
 export type Configuration = ProcessorConfig & ExtendedConfig;
